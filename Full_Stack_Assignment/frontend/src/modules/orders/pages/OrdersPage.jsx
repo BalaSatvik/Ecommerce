@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import OrderTable from "../components/OrderTable";
 import OrderCard from "../components/OrderCard";
-import { fetchOrders, fetchOrderDetails, updateOrder } from "../api/orderApi";
+import { fetchOrdersByCriteria, fetchOrderDetails, updateOrder } from "../api/orders";
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState([]);
@@ -9,7 +9,7 @@ const OrdersPage = () => {
   const customerId = 101;
 
   useEffect(() => {
-    fetchOrders(customerId)
+    fetchOrdersByCriteria(customerId)
       .then((data) => setOrders(data))
       .catch((err) => console.error("Error fetching orders:", err));
   }, []);

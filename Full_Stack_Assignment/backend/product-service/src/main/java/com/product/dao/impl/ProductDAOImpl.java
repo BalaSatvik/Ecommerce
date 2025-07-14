@@ -5,16 +5,25 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.stereotype.Repository;
 
 import com.product.dao.ProductDAO;
 import com.product.domain.Product;
 import com.product.domain.ProductRequest;
 
+@Repository
 public class ProductDAOImpl implements ProductDAO{
-	private NamedParameterJdbcTemplate jdbcTemplate;
+	
+	private final NamedParameterJdbcTemplate jdbcTemplate;
+
+    @Autowired
+    public ProductDAOImpl(NamedParameterJdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
 	
 	private static class ProductMapper implements RowMapper<Product> {
 		@Override
@@ -45,7 +54,7 @@ public class ProductDAOImpl implements ProductDAO{
 
 	    List<MapSqlParameterSource> batchParameters = productRequests.stream()
 	        .map(p -> new MapSqlParameterSource()
-	                .addValue("name", p.getProductName())
+	                .addValue("productName", p.getProductName())
 	                .addValue("description", p.getDescription())
 	                .addValue("price", p.getPrice())
 	                .addValue("quantity", p.getQuantity()))
@@ -59,12 +68,12 @@ public class ProductDAOImpl implements ProductDAO{
 	public List<Product> getProducts(String productName,Integer flagName) {
 		String sqlQuery = "SELECT ProductId, ProductName, Description, "+
 							"Price, Quantity, AverageRating, "+
-							"CreatedAtDate, UpdatedAtDate FROM products"+
+							"CreatedAtDate, UpdatedAtDate FROM products "+
 							"WHERE ((0 = :flagName) OR (ProductName = :productName))";
 		MapSqlParameterSource parameters = new MapSqlParameterSource();
 		parameters.addValue("flagName", flagName);
 		parameters.addValue("productName", productName);
-		return jdbcTemplate.query(sqlQuery, new ProductMapper());
+		return jdbcTemplate.query(sqlQuery, parameters, new ProductMapper());
 	}
 
 }

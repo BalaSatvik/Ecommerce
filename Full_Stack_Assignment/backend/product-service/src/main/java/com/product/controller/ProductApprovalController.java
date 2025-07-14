@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.product.Exceptions.ProductDatabaseOperationException;
 import com.product.domain.ApprovalActionRequest;
 import com.product.domain.Product;
 import com.product.domain.ProductRequest;
@@ -38,8 +39,8 @@ public class ProductApprovalController {
     }
 
     @PostMapping("/approve")
-    public String approveRequests(@RequestBody ApprovalActionRequest request) {
-        productApprovalService.updateRequest(
+    public String approveRequests(@RequestBody ApprovalActionRequest request) throws ProductDatabaseOperationException {
+        productApprovalService.approveRequest(
                 request.getProductRequestIds(),
                 RequestStatus.APPROVED,
                 request.getManagerId()
@@ -49,7 +50,7 @@ public class ProductApprovalController {
 
     @PostMapping("/reject")
     public String rejectRequests(@RequestBody ApprovalActionRequest request) {
-        productApprovalService.updateRequest(
+        productApprovalService.rejectRequest(
                 request.getProductRequestIds(),
                 RequestStatus.DECLINED,
                 request.getManagerId()

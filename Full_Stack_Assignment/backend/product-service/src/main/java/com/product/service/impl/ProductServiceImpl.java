@@ -14,7 +14,7 @@ import com.product.service.ProductService;
 public class ProductServiceImpl implements ProductService{
 	
 	@Autowired
-	ProductDAO productDAO;
+	private ProductDAO productDAO;
 	
 	@Override
 	public void insertProduct(List<ProductRequest> productRequest) {
@@ -27,7 +27,7 @@ public class ProductServiceImpl implements ProductService{
 	@Override
 	public List<Product> getProducts(String productName){
 		Integer flagName = 0;
-		if (productName != null || productName.length() != 0) {
+		if (productName != null && !productName.trim().isEmpty()) {
 			flagName = 1;
 		}
 		else {
