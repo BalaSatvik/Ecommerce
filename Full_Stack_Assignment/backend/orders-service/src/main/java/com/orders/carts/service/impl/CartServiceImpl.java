@@ -1,5 +1,6 @@
 package com.orders.carts.service.impl;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,12 +32,14 @@ public class CartServiceImpl implements CartService {
     }
 
     @Override
-    public void addItemToCart(Long userId, Long productId, Integer quantity) {
+    public void addItemToCart(Long userId, Long productId, Integer quantity,BigDecimal price) {
         Cart cart = getOrCreateCart(userId);
         CartItem item = new CartItem();
         item.setCartId(cart.getCartId());
         item.setProductId(productId);
+        item.setUserId(userId);
         item.setQuantity(quantity);
+        item.setPrice(price);
         cartDAO.addItemToCart(item);
     }
 

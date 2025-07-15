@@ -5,6 +5,19 @@ const axiosInstance = axios.create({
   timeout: 10000,
 });
 
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers["Authorization"] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 // @param {string} method - HTTP method (GET, POST, PUT, PATCH, DELETE).
 // @param {string} urlTemplate - URL with optional path params (e.g., "/users/:id").
 // @param {object} [pathVars={}] - Path variable substitutions. like { id: 123 }.
@@ -16,21 +29,21 @@ export const makeRequest = async (
   urlTemplate,
   pathVars = {},
   queryParams = {},
-  body = {}
+  body = {},
+  baseURL = "http://localhost:8080"
 ) => {
   const resolvedUrl = Object.entries(pathVars).reduce(
     (url, [key, value]) => url.replace(`:${key}`, encodeURIComponent(value)),
     urlTemplate
   );
 
-  const needsBody = ["POST", "PUT", "PATCH", "GET"].includes(
-    method.toUpperCase()
-  );
+  const needsBody = ["POST", "PUT", "PATCH"].includes(method.toUpperCase());
 
   try {
     const response = await axiosInstance.request({
       method,
       url: resolvedUrl,
+      baseURL,
       params: queryParams,
       data: needsBody ? body : undefined,
       withCredentials: true,
@@ -45,3 +58,4 @@ export const makeRequest = async (
     throw err;
   }
 };
+

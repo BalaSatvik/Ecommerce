@@ -17,9 +17,8 @@ public interface OrderService {
 
 	void updateMyOrder(SearchOrderCriteria criteria) throws OrderDatabaseOperationException, InvalidOrderException;
 
-	Order getOrderDetails(Long orderId, Long customerId) throws OrderDatabaseOperationException, InvalidOrderException;
+	Order getOrderDetails(Long orderId, Long customerId)
+			throws OrderDatabaseOperationException, InvalidOrderException, OrderNotFoundException;
 
 	Order createOrderFromCartItems(Long userId, List<CartItem> cartItems);
-
-
 }

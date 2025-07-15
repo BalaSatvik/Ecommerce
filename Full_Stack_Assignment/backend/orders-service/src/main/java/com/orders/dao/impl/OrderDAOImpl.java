@@ -4,9 +4,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
@@ -33,6 +35,7 @@ public class OrderDAOImpl implements OrderDAO {
 	@Autowired
 	private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
+	@Autowired
 	private OrderItemDAO orderItemDAO;
 
 	private static class OrderItemMapper implements RowMapper<OrderItem> {
@@ -42,6 +45,7 @@ public class OrderDAOImpl implements OrderDAO {
 			item.setOrderItemId(rs.getLong("OrderItemId"));
 			item.setOrderId(rs.getLong("OrderId"));
 			item.setProductId(rs.getLong("ProductId"));
+			item.setProductName(rs.getString("ProductName"));
 			item.setQuantity(rs.getInt("Quantity"));
 			item.setPrice(rs.getBigDecimal("Price"));
 			Timestamp createdTs = rs.getTimestamp("CreatedAtDate");
@@ -79,11 +83,29 @@ public class OrderDAOImpl implements OrderDAO {
 	public Order fetchCustomerOrderWithItems(Long orderId, Long customerId)
 			throws OrderNotFoundException, OrderDatabaseOperationException {
 		String orderSql = "SELECT OrderId, UserId, Address, TotalAmount, Status, PlacedAtDate, UpdatedAtDate FROM orders WHERE UserId = :customerId AND OrderId = :orderId";
-		MapSqlParameterSource params = new MapSqlParameterSource("orderId", orderId);
-		Order order = namedParameterJdbcTemplate.queryForObject(orderSql, params, new OrderMapper());
 
-		List<OrderItem> items = orderItemDAO.fetchOrderItemsByOrderId(orderId);
-		order.setOrderItems(items);
+		MapSqlParameterSource params = new MapSqlParameterSource();
+		params.addValue("orderId", orderId);
+		params.addValue("customerId", customerId);
+
+		Order order;
+		try {
+			order = namedParameterJdbcTemplate.queryForObject(orderSql, params, new OrderMapper());
+		} catch (org.springframework.dao.EmptyResultDataAccessException e) {
+			throw new OrderNotFoundException("No order found for given Order ID and Customer ID.");
+		} catch (DataAccessException e) {
+			log.error("Database error while fetching order", e);
+			throw new OrderDatabaseOperationException("Database error occurred while fetching the order.", e);
+		}
+
+		try {
+			List<OrderItem> items = orderItemDAO.fetchOrderItemsByOrderId(orderId);
+			order.setOrderItems(items);
+		} catch (DataAccessException e) {
+			log.error("Failed to fetch order items", e);
+			throw new OrderDatabaseOperationException("Failed to fetch order items.", e);
+		}
+
 		return order;
 	}
 
@@ -121,7 +143,6 @@ public class OrderDAOImpl implements OrderDAO {
 		}
 	}
 
-	@Override
 	public List<Order> fetchCustomerOrders(SearchOrderCriteria criteria) throws OrderDatabaseOperationException {
 		String sql = "SELECT OrderId, UserId, Address, TotalAmount, Status, PlacedAtDate, UpdatedAtDate "
 				+ "FROM orders WHERE 1=1 " + "AND (:orderIdsFlag = 0 OR OrderId IN (:orderIds)) "
@@ -143,7 +164,11 @@ public class OrderDAOImpl implements OrderDAO {
 		params.put("toDateFlag", toDateFlag);
 
 		params.put("orderIds", criteria.getOrderIds());
-		params.put("orderStatuses", criteria.getOrderStatuses());
+		List<String> statusCodes = null;
+		if (criteria.getOrderStatuses() != null && !criteria.getOrderStatuses().isEmpty()) {
+			statusCodes = criteria.getOrderStatuses().stream().map(OrderStatus::getCode).collect(Collectors.toList());
+		}
+		params.put("orderStatuses", statusCodes);
 		params.put("fromDate", criteria.getFromDate());
 		params.put("toDate", criteria.getToDate());
 
@@ -167,8 +192,8 @@ public class OrderDAOImpl implements OrderDAO {
 	@Override
 	public void updateMyOrder(SearchOrderCriteria criteria) throws OrderDatabaseOperationException {
 		String sql = "UPDATE orders SET " + "Status = CASE "
-				+ "WHEN (UserId = :userId AND OrderId IN (:orderIds) AND Status = 'P') THEN 'C' " + "ELSE Status END, "
-				+ "Address = CASE "
+				+ "WHEN (:addressFlag = 0 AND UserId = :userId AND OrderId IN (:orderIds) AND Status = 'P') THEN 'C' "
+				+ "ELSE Status END, " + "Address = CASE "
 				+ "WHEN (:addressFlag = 1 AND UserId = :userId AND OrderId IN (:orderIds)) THEN :address "
 				+ "ELSE Address END";
 

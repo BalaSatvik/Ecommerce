@@ -29,7 +29,7 @@ public class CategoryProductMappingRequestServiceImpl implements CategoryProduct
     }
 
     @Override
-    public void createCategoryProductMappingRequest(CategoryProductMappingRequest categoryProductMappingRequest) {
+    public void createCategoryProductMappingRequest(CategoryProductMappingRequest categoryProductMappingRequest) throws Exception {
         if (categoryProductMappingRequest == null) {
             throw new IllegalArgumentException("Request cannot be null");
         }
@@ -46,7 +46,7 @@ public class CategoryProductMappingRequestServiceImpl implements CategoryProduct
     }
 
     @Override
-    public void updateMappingRequestStatusService(List<Long> requestIds, Integer approvedBy, RequestStatus status) {
+    public void updateMappingRequestStatusService(List<Long> requestIds, Long approvedBy, RequestStatus status) throws Exception {
         if (requestIds == null || requestIds.isEmpty()) {
             throw new IllegalArgumentException("RequestIds must not be null or empty");
         }

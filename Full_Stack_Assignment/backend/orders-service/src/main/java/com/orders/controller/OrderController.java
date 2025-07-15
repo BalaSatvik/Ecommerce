@@ -33,12 +33,15 @@ public class OrderController {
 	@PostMapping("/search")
 	public List<Order> getOrdersByCriteria(@RequestBody SearchOrderCriteria criteria)
 			throws InvalidOrderException, OrderNotFoundException, OrderDatabaseOperationException {
+
 		if (criteria.getPageNumber() != null && criteria.getPageNumber() < 0) {
 			throw new InvalidOrderException("Page number cannot be negative");
 		}
+
 		if (criteria.getPageSize() != null && criteria.getPageSize() <= 0) {
 			throw new InvalidOrderException("Page size must be greater than 0");
 		}
+
 		return orderService.getMyOrders(criteria);
 	}
 

@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.orders.carts.domain.CartItem;
 import com.orders.carts.service.CartService;
-import com.orders.domain.AddItemRequest;
+import com.orders.carts.domain.AddItemRequest;
 
 import lombok.RequiredArgsConstructor;
 
@@ -30,7 +30,7 @@ public class CartController {
 
     @PostMapping("/add")
     public String addItem(@RequestBody AddItemRequest request) {
-        cartService.addItemToCart(request.getUserId(), request.getProductId(), request.getQuantity());
+        cartService.addItemToCart(request.getUserId(), request.getProductId(), request.getQuantity(), request.getPrice());
         return "Item added to cart.";
     }
 

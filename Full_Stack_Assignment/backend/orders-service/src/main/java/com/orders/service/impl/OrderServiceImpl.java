@@ -2,6 +2,7 @@ package com.orders.service.impl;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -77,7 +78,6 @@ public class OrderServiceImpl implements OrderService {
 	    }
 	}
 
-
 	@Override
 	public Order placeNewOrder(Order order) throws OrderDatabaseOperationException, InvalidOrderException {
 		validateOrderFields(order);
@@ -97,10 +97,7 @@ public class OrderServiceImpl implements OrderService {
 			throws OrderNotFoundException, OrderDatabaseOperationException {
 		try {
 			List<Order> orders = orderDAO.fetchCustomerOrders(criteria);
-			if (orders == null || orders.isEmpty()) {
-				throw new OrderNotFoundException("No orders found for the given criteria.");
-			}
-			return orders;
+			return orders != null ? orders : Collections.emptyList();
 		} catch (DataAccessException e) {
 			log.error("Error while fetching customer orders.", e);
 			throw new OrderDatabaseOperationException("Error while fetching customer orders.", e);
@@ -127,7 +124,7 @@ public class OrderServiceImpl implements OrderService {
 
 	@Override
 	public Order getOrderDetails(Long orderId, Long customerId)
-			throws OrderDatabaseOperationException, InvalidOrderException {
+			throws OrderDatabaseOperationException, InvalidOrderException, OrderNotFoundException {
 		if (orderId == null || orderId <= 0) {
 			throw new InvalidOrderException("No order Id provided to fetch details.");
 		}
@@ -137,7 +134,8 @@ public class OrderServiceImpl implements OrderService {
 		try {
 			return orderDAO.fetchCustomerOrderWithItems(orderId, customerId);
 		} catch (DataAccessException e) {
-			log.error("Error while fetching the order details.", e);
+			log.error("Failed to fetch order details for orderId={} customerId={}", orderId, customerId, e);
+
 			throw new OrderDatabaseOperationException("Error occured while fetching specific order's details.", e);
 		}
 

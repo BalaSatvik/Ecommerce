@@ -31,7 +31,6 @@ public class OrderItemDAOImpl implements OrderItemDAO {
 		@Override
 		public OrderItem mapRow(ResultSet rs, int rowNum) throws SQLException {
 			OrderItem orderItem = new OrderItem();
-
 			orderItem.setOrderId(rs.getLong("OrderId"));
 			orderItem.setOrderItemId(rs.getLong("OrderItemId"));
 			orderItem.setPrice(rs.getBigDecimal("Price"));
@@ -46,15 +45,14 @@ public class OrderItemDAOImpl implements OrderItemDAO {
 
 	@Override
 	public void storeOrderItems(List<OrderItem> items) throws OrderDatabaseOperationException {
-		String sql = "INSERT INTO order_items (OrderId, ProductId, ProductName, Quantity, Price, CreatedAt) "
-				+ "VALUES (:orderId, :productId, :productName, :quantity, :price, :createdAt)";
+		String sql = "INSERT INTO order_items (OrderId, ProductId, Quantity, Price, CreatedAt) "
+				+ "VALUES (:orderId, :productId, :quantity, :price, :createdAt)";
 
 		try {
 			for (OrderItem item : items) {
 				Map<String, Object> params = new HashMap<>();
 				params.put("orderId", item.getOrderId());
 				params.put("productId", item.getProductId());
-				params.put("productName", item.getProductName());
 				params.put("quantity", item.getQuantity());
 				params.put("price", item.getPrice());
 				params.put("createdAt", item.getCreatedAt());
@@ -68,9 +66,12 @@ public class OrderItemDAOImpl implements OrderItemDAO {
 	}
 
 	@Override
-	public List<OrderItem> fetchOrderItemsByOrderId(Long orderId) throws OrderNotFoundException, OrderDatabaseOperationException {
-		String sql = "SELECT OrderItemId, OrderId, ProductId, ProductName, Quantity, Price, CreatedAt "
-				+ "FROM order_items WHERE OrderId = :orderId";
+	public List<OrderItem> fetchOrderItemsByOrderId(Long orderId)
+			throws OrderNotFoundException, OrderDatabaseOperationException {
+
+		String sql = "SELECT item.OrderItemId, item.OrderId, item.ProductId, products.ProductName, "
+				+ "item.Quantity, item.Price, item.CreatedAt " + "FROM order_items AS item "
+				+ "JOIN products ON item.ProductId = products.ProductId " + "WHERE item.OrderId = :orderId";
 
 		Map<String, Object> params = new HashMap<>();
 		params.put("orderId", orderId);

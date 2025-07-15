@@ -20,4 +20,3 @@ public class Product {
     private LocalDateTime createdAtDate;
     private LocalDateTime updatedAtDate;
 }
-

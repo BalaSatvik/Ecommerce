@@ -17,62 +17,65 @@ import com.product.service.ProductService;
 @Service
 public class ProductApprovalServiceImpl implements ProductApprovalService {
 
-	@Autowired
-	ProductApprovalDAO productApprovalDAO;
-	@Autowired
-	ProductService productService;
+    @Autowired
+    ProductApprovalDAO productApprovalDAO;
 
-	SearchProductRequestCriteria sprc;
-	@Autowired
-	ProductRequestDAO productRequestDAO;
+    @Autowired
+    ProductService productService;
 
-	public List<ProductRequest> getRequests(List<Long> productRequestId, List<RequestStatus> status) {
-		Integer flagIds = 1;
-		Integer flagStatus = 1;
-		if (productRequestId.isEmpty() || productRequestId == null) {
-			flagIds = 0;
-		}
-		if (status == null) {
-			flagStatus = 0;
-		}
+    @Autowired
+    ProductRequestDAO productRequestDAO;
 
-		return productApprovalDAO.getRequests(productRequestId, flagIds, status, flagStatus);
-	}
+    @Override
+    public List<ProductRequest> getRequests(List<Long> productRequestId, List<RequestStatus> status) {
+        int flagIds = 1;
+        int flagStatus = 1;
 
-	@Override
-	public void approveRequest(List<Long> productRequestId, RequestStatus status, Long managerId)
-			throws ProductDatabaseOperationException {
-		if (productRequestId == null || productRequestId.isEmpty()) {
-			throw new IllegalArgumentException("Product request IDs must not be null or empty.");
-		}
-		if (status == null) {
-			throw new IllegalArgumentException("Status must not be null.");
-		}
-		if (managerId == null) {
-			throw new IllegalArgumentException("Manager ID must not be null.");
-		}
+        if (productRequestId == null || productRequestId.isEmpty()) {
+            flagIds = 0;
+        }
+        if (status == null) {
+            flagStatus = 0;
+        }
 
-		int[] records = productApprovalDAO.updateRequest(productRequestId, status, managerId);
-		sprc.setRequestIds(productRequestId);
-		sprc.setStatus(status);
-		List<ProductRequest> productRequest = productRequestDAO.fetchByCriteria(sprc);
-		productService.insertProduct(productRequest);
+        return productApprovalDAO.getRequests(productRequestId, flagIds, status, flagStatus);
+    }
 
-	}
+    @Override
+    public void approveRequest(List<Long> productRequestId, RequestStatus status, Long managerId)
+            throws ProductDatabaseOperationException {
+        if (productRequestId == null || productRequestId.isEmpty()) {
+            throw new IllegalArgumentException("Product request IDs must not be null or empty.");
+        }
+        if (status == null) {
+            throw new IllegalArgumentException("Status must not be null.");
+        }
+        if (managerId == null) {
+            throw new IllegalArgumentException("Manager ID must not be null.");
+        }
 
-	@Override
-	public void rejectRequest(List<Long> productRequestId, RequestStatus status, Long managerId) {
-		if (productRequestId == null || productRequestId.isEmpty()) {
-			throw new IllegalArgumentException("Product request IDs must not be null or empty.");
-		}
-		if (status == null) {
-			throw new IllegalArgumentException("Status must not be null.");
-		}
-		if (managerId == null) {
-			throw new IllegalArgumentException("Manager ID must not be null.");
-		}
+        productApprovalDAO.updateRequest(productRequestId, status, managerId);
 
-		productApprovalDAO.updateRequest(productRequestId, status, managerId);
-	}
+        SearchProductRequestCriteria sprc = new SearchProductRequestCriteria(); // method-local
+        sprc.setRequestIds(productRequestId);
+        sprc.setStatus(status);
 
+        List<ProductRequest> productRequest = productRequestDAO.fetchByCriteria(sprc);
+        productService.insertProduct(productRequest);
+    }
+
+    @Override
+    public void rejectRequest(List<Long> productRequestId, RequestStatus status, Long managerId) {
+        if (productRequestId == null || productRequestId.isEmpty()) {
+            throw new IllegalArgumentException("Product request IDs must not be null or empty.");
+        }
+        if (status == null) {
+            throw new IllegalArgumentException("Status must not be null.");
+        }
+        if (managerId == null) {
+            throw new IllegalArgumentException("Manager ID must not be null.");
+        }
+
+        productApprovalDAO.updateRequest(productRequestId, status, managerId);
+    }
 }

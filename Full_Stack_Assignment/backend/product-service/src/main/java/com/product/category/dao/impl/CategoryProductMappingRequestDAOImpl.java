@@ -29,7 +29,7 @@ public class CategoryProductMappingRequestDAOImpl implements CategoryProductMapp
 	}
 
 	@Override
-	public void createMappingRequest(CategoryProductMappingRequest request) {
+	public void createMappingRequest(CategoryProductMappingRequest request) throws Exception {
 		String sql = "INSERT INTO category_product_mapping_requests " +
 				"(CategoryId, ProductId, RequestedBy, Status, CreatedAtDate) " +
 				"VALUES (:categoryId, :productId, :requestedBy, :status, :createdAtDate)";
@@ -44,12 +44,12 @@ public class CategoryProductMappingRequestDAOImpl implements CategoryProductMapp
 		try {
 			namedParameterJdbcTemplate.update(sql, params);
 		} catch (Exception e) {
-			throw new Error("Error adding category Product Mapping Request", e);
+			throw new Exception("Error adding category Product Mapping Request", e);
 		}
 	}
 
 	@Override
-	public void updateRequestStatus(List<Long> requestIds, Integer approvedBy, RequestStatus status) {
+	public void updateRequestStatus(List<Long> requestIds, Long approvedBy, RequestStatus status) throws Exception {
 		if (requestIds == null || requestIds.isEmpty())
 			return;
 
@@ -66,7 +66,7 @@ public class CategoryProductMappingRequestDAOImpl implements CategoryProductMapp
 		try {
 			namedParameterJdbcTemplate.update(sql, params);
 		} catch (Exception e) {
-			throw new Error("Error updating category Product Mapping request", e);
+			throw new Exception("Error updating category Product Mapping request", e);
 		}
 	}
 

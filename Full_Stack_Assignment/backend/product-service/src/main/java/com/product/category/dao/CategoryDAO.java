@@ -2,6 +2,7 @@ package com.product.category.dao;
 
 import java.util.List;
 
+import com.product.Exceptions.CategoryRequestDatabaseOperationException;
 import com.product.category.domain.Category;
 import com.product.category.domain.CategoryRequest;
 import com.product.category.domain.CategoryRequestSearchCriteria;
@@ -14,7 +15,7 @@ public interface CategoryDAO {
 
     void updateCategoryRequest(List<Long> requestIds, Integer approvedBy, RequestStatus status);
 
-    List<CategoryRequest> getRequest(CategoryRequestSearchCriteria searchCriteria);
+    List<CategoryRequest> getRequest(CategoryRequestSearchCriteria searchCriteria) throws CategoryRequestDatabaseOperationException ;
     
     void  createCategory(Category  category);
 

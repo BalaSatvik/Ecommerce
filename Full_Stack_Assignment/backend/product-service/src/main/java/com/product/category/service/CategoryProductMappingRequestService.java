@@ -10,9 +10,9 @@ import com.product.enums.RequestStatus;
 @Service
 public interface CategoryProductMappingRequestService {
 	
-	void createCategoryProductMappingRequest(CategoryProductMappingRequest categoryProductMappingRequest);
+	void createCategoryProductMappingRequest(CategoryProductMappingRequest categoryProductMappingRequest) throws Exception;
 	
-	void updateMappingRequestStatusService(List<Long> requestIds, Integer approvedBy, RequestStatus status);
+	void updateMappingRequestStatusService(List<Long> requestIds, Long approvedBy, RequestStatus status) throws Exception;
 	
 	List<CategoryProductMappingRequest> getCategoryMappingRequest(List<Long> requestIds,RequestStatus requestStatus,Long loggedInUser) throws Exception;
 	

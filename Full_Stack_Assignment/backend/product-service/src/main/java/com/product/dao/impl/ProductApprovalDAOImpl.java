@@ -4,6 +4,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,81 +20,87 @@ import com.product.enums.RequestStatus;
 @Repository
 public class ProductApprovalDAOImpl implements ProductApprovalDAO {
 
+	private static final String SELECT_REQUESTS_QUERY = "SELECT ProductRequestId, ProductName, Description, Price, "
+			+ "Quantity, RequestedBy, Status, ApprovedBy, CreatedAtDate, UpdatedAtDate " + "FROM product_requests "
+			+ "WHERE ((0 = :flagIds) OR (ProductRequestId IN (:ids))) "
+			+ "AND ((0 = :flagStatus) OR (Status IN (:status)))";
+
+	private static final String UPDATE_REQUEST_QUERY = "UPDATE product_requests SET " + "Status = :status, "
+			+ "ApprovedBy = :approvedBy, " + "UpdatedAtDate = :updatedAtDate "
+			+ "WHERE ProductRequestId = :productRequestId";
+
 	private final NamedParameterJdbcTemplate jdbcTemplate;
 
-    @Autowired
-    public ProductApprovalDAOImpl(NamedParameterJdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
-    }
+	@Autowired
+	public ProductApprovalDAOImpl(NamedParameterJdbcTemplate jdbcTemplate) {
+		this.jdbcTemplate = jdbcTemplate;
+	}
+
+	@Override
+	public List<ProductRequest> getRequests(List<Long> productRequestId, Integer flagIds, List<RequestStatus> status,
+			Integer flagStatus) {
+		MapSqlParameterSource params = new MapSqlParameterSource();
+		params.addValue("flagIds", flagIds);
+		params.addValue("ids", productRequestId);
+		params.addValue("flagStatus", flagStatus);
+		params.addValue("status", status.stream().map(RequestStatus::getCode).collect(Collectors.toList()));
+
+		return jdbcTemplate.query(SELECT_REQUESTS_QUERY, params, new ProductApprovalMapper());
+	}
+
+	@Override
+	public int[] updateRequest(List<Long> productRequestIds, RequestStatus status, Long managerId) {
+		List<MapSqlParameterSource> paramSources = productRequestIds.stream()
+				.map(id -> new MapSqlParameterSource().addValue("status", status.getCode())
+						.addValue("approvedBy", managerId).addValue("updatedAtDate", LocalDateTime.now())
+						.addValue("productRequestId", id))
+				.collect(Collectors.toList());
+
+		int[] records = jdbcTemplate.batchUpdate(UPDATE_REQUEST_QUERY,
+				paramSources.toArray(new MapSqlParameterSource[0]));
+
+		boolean allFailed = records.length == 0 || productRequestIds.size() != records.length
+				|| java.util.Arrays.stream(records).allMatch(count -> count == 0);
+
+		if (allFailed) {
+			throw new RuntimeException("No requests were updated. Invalid IDs? " + productRequestIds);
+		}
+
+		return records;
+	}
 
 	private static class ProductApprovalMapper implements RowMapper<ProductRequest> {
 		@Override
 		public ProductRequest mapRow(ResultSet rs, int rowNum) throws SQLException {
-			ProductRequest productRequest = new ProductRequest();
+			ProductRequest request = new ProductRequest();
+			request.setProductRequestId(rs.getLong("ProductRequestId"));
+			request.setProductName(rs.getString("ProductName"));
+			request.setPrice(rs.getBigDecimal("Price"));
+			request.setDescription(rs.getString("Description"));
+			request.setQuantity(rs.getInt("Quantity"));
+			request.setRequestedBy(rs.getLong("RequestedBy"));
 
-			productRequest.setProductRequestId(rs.getLong("ProductRequestId"));
-			productRequest.setProductName(rs.getString("ProductName"));
-			productRequest.setPrice(rs.getBigDecimal("Price"));
-			productRequest.setDescription(rs.getString("Description"));
-			productRequest.setQuantity(rs.getInt("Quantity"));
-			productRequest.setRequestedBy(rs.getLong("RequestedBy"));
-
-			String productRequestStatus = rs.getString("Status");
-			if ("A".equalsIgnoreCase(productRequestStatus)) {
-				productRequest.setStatus(RequestStatus.APPROVED);
-			} else if ("D".equalsIgnoreCase(productRequestStatus)) {
-				productRequest.setStatus(RequestStatus.DECLINED);
+			String status = rs.getString("Status");
+			if ("A".equalsIgnoreCase(status)) {
+				request.setStatus(RequestStatus.APPROVED);
+			} else if ("D".equalsIgnoreCase(status)) {
+				request.setStatus(RequestStatus.DECLINED);
 			} else {
-				productRequest.setStatus(RequestStatus.PENDING);
+				request.setStatus(RequestStatus.PENDING);
 			}
-			productRequest.setApprovedBy(rs.getObject("ApprovedBy") != null ? rs.getLong("ApprovedBy") : null);
 
-			productRequest.setCreatedAtDate(
-					rs.getTimestamp("CreatedAtDate") != null ? rs.getTimestamp("CreatedAtDate").toLocalDateTime()
-							: null);
-			productRequest.setUpdatedAtDate(
-					rs.getTimestamp("UpdatedAtDate") != null ? rs.getTimestamp("UpdatedAtDate").toLocalDateTime()
-							: null);
-			return productRequest;
+			Object approvedBy = rs.getObject("ApprovedBy");
+			request.setApprovedBy(Objects.nonNull(approvedBy) ? rs.getLong("ApprovedBy") : null);
+
+			if (rs.getTimestamp("CreatedAtDate") != null) {
+				request.setCreatedAtDate(rs.getTimestamp("CreatedAtDate").toLocalDateTime());
+			}
+
+			if (rs.getTimestamp("UpdatedAtDate") != null) {
+				request.setUpdatedAtDate(rs.getTimestamp("UpdatedAtDate").toLocalDateTime());
+			}
+
+			return request;
 		}
 	}
-
-	@Override
-	public List<ProductRequest> getRequests(List<Long> productRequestId,Integer flagIds ,List<RequestStatus> status,Integer flagStatus) {
-		String sqlQuery = "SELECT ProductRequestId, ProductName, Description, Price,"+
-				" Quantity, RequestedBy, Status, ApprovedBy, CreatedAtDate, "+
-				"UpdatedAtDate FROM product_requests WHERE "+
-				"((0 = :flagIds) OR (ProductRequestId IN (:ids))) AND "+
-				"((0 = :flagStatus) OR (Status IN (:status)))";
-
-		    MapSqlParameterSource parameters = new MapSqlParameterSource();
-		    parameters.addValue("flagIds", flagIds);
-		    parameters.addValue("ids",productRequestId);
-			parameters.addValue("flagStatus", flagStatus);
-		    parameters.addValue("status",status);
-		    return jdbcTemplate.query(sqlQuery,parameters,new ProductApprovalMapper());
-		    
-	}
-
-	@Override
-	public int[] updateRequest(List<Long> productRequestId, RequestStatus status, Long managerId) {
-	    String sqlQuery = "UPDATE product_requests SET Status = :status, ApprovedBy = :approvedBy, UpdatedAtDate = :updatedAtDate WHERE ProductRequestId = :productRequestId";
-	    
-	    List<MapSqlParameterSource> parameterSources = productRequestId.stream()
-	            .map(id -> new MapSqlParameterSource()
-	                    .addValue("status", status.getCode())
-	                    .addValue("approvedBy", managerId)
-	                    .addValue("updatedAtDate", LocalDateTime.now())
-	                    .addValue("productRequestId", id))
-	            .collect(Collectors.toList());
-
-	    int[] records = jdbcTemplate.batchUpdate(sqlQuery, parameterSources.toArray(new MapSqlParameterSource[0]));
-
-	    if (records.length == 0 || records[0] == 0) {
-	        throw new RuntimeException("No request found with ID " + productRequestId + " to update status.");
-	    }
-	    return records;
-	}
-
-
 }

@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class UpdateMappingRequestStatusRequest {
     private List<Long> requestIds;
-    private Integer approvedBy;
+    private Long approvedBy;
     private RequestStatus status;
 
 }

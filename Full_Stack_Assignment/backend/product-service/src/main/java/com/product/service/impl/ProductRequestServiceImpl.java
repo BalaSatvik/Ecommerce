@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
@@ -94,7 +95,7 @@ public class ProductRequestServiceImpl implements ProductRequestService {
 			throw new InvalidProductRequestException("RequestedBy (user ID) must be provided and positive.");
 		}
 
-		List<String> existingProductNames = productService.getProducts("").stream()
+		List<String> existingProductNames = productService.getProducts(null).stream()
 				.map(product -> product.getProductName().trim().toLowerCase()).collect(Collectors.toList());
 		if (existingProductNames.contains(request.getProductName()) && existingProductNames.size() > 0) {
 			throw new InvalidProductRequestException(

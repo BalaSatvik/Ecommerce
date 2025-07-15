@@ -4,11 +4,9 @@ import java.util.Collections;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import com.product.Exceptions.ProductDatabaseOperationException;
 import com.product.domain.ApprovalActionRequest;
@@ -22,39 +20,48 @@ import com.product.service.ProductService;
 @RequestMapping("/api/product-approval")
 public class ProductApprovalController {
 
-    @Autowired
-    private ProductService productService;
+	@Autowired
+	private ProductService productService;
 
-    @Autowired
-    private ProductApprovalService productApprovalService;
+	@Autowired
+	private ProductApprovalService productApprovalService;
 
-    @GetMapping("/products")
-    public List<Product> getAllApprovedProducts() {
-        return productService.getProducts("");
-    }
+	@GetMapping("/products")
+	public List<Product> getAllApprovedProducts() {
+		return productService.getProducts("");
+	}
 
-    @GetMapping("/pending-requests")
-    public List<ProductRequest> getPendingRequests() {
-        return productApprovalService.getRequests(null, Collections.singletonList(RequestStatus.PENDING));
-    }
+	@GetMapping("/pending-requests")
+	public List<ProductRequest> getPendingRequests() {
+		return productApprovalService.getRequests(null, Collections.singletonList(RequestStatus.PENDING));
+	}
 
-    @PostMapping("/approve")
-    public String approveRequests(@RequestBody ApprovalActionRequest request) throws ProductDatabaseOperationException {
-        productApprovalService.approveRequest(
-                request.getProductRequestIds(),
-                RequestStatus.APPROVED,
-                request.getManagerId()
-        );
-        return "Approved successfully";
-    }
+	@PostMapping("/approve")
+	public String approveRequests(@RequestBody List<Long> productRequestIds) throws ProductDatabaseOperationException {
+		Long managerId = 4L;
+		productApprovalService.approveRequest(productRequestIds, RequestStatus.APPROVED, managerId);
+		return "Approved successfully";
+	}
 
-    @PostMapping("/reject")
-    public String rejectRequests(@RequestBody ApprovalActionRequest request) {
-        productApprovalService.rejectRequest(
-                request.getProductRequestIds(),
-                RequestStatus.DECLINED,
-                request.getManagerId()
-        );
-        return "Rejected successfully";
-    }
+	@PostMapping("/reject")
+	public ResponseEntity<String> rejectRequests(@RequestBody List<ApprovalActionRequest> requests) {
+		try {
+			for (ApprovalActionRequest req : requests) {
+				if (req.getProductRequestIds() == null || req.getProductRequestIds().isEmpty()) {
+					throw new IllegalArgumentException("ProductRequestIds must not be null or empty.");
+				}
+				if (req.getManagerId() == null) {
+					throw new IllegalArgumentException("ManagerId must not be null.");
+				}
+
+				productApprovalService.rejectRequest(req.getProductRequestIds(), RequestStatus.DECLINED,
+						req.getManagerId());
+			}
+			return ResponseEntity.ok("Rejected successfully");
+		} catch (Exception e) {
+			e.printStackTrace(); // See full error in console
+			return ResponseEntity.status(500).body("Rejection failed: " + e.getMessage());
+		}
+	}
+
 }

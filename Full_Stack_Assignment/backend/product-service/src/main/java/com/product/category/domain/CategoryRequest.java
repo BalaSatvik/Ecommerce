@@ -4,12 +4,16 @@ import java.time.LocalDateTime;
 
 import com.product.enums.RequestStatus;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class CategoryRequest {
-	private Integer categoryRequestId;
+	private Long categoryRequestId;
     private String categoryName;
     private RequestStatus status;
     private Long requestedBy;

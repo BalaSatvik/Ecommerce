@@ -13,10 +13,10 @@ import lombok.NoArgsConstructor;
 public class CartItem {
     private Long cartItemId;
     private Long cartId;
+    private Long userId;
     private Long productId;
     private String productName;
     private Integer quantity;
     private BigDecimal price;   
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private LocalDateTime addededAt;
 }

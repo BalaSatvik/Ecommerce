@@ -1,15 +1,18 @@
 package com.orders.carts.dao.impl;
 
-import com.orders.carts.dao.CartDAO;
-import com.orders.carts.domain.Cart;
-import com.orders.carts.domain.CartItem;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
-import org.springframework.jdbc.core.namedparam.*;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import com.orders.carts.dao.CartDAO;
+import com.orders.carts.domain.Cart;
+import com.orders.carts.domain.CartItem;
 
 @Repository
 public class CartDAOImpl implements CartDAO {
@@ -21,8 +24,6 @@ public class CartDAOImpl implements CartDAO {
         Cart cart = new Cart();
         cart.setCartId(rs.getLong("CartId"));
         cart.setUserId(rs.getLong("UserId"));
-        cart.setCreatedAt(rs.getTimestamp("CreatedAt") != null ? rs.getTimestamp("CreatedAt").toLocalDateTime() : null);
-        cart.setUpdatedAt(rs.getTimestamp("UpdatedAt") != null ? rs.getTimestamp("UpdatedAt").toLocalDateTime() : null);
         return cart;
     };
 
@@ -32,8 +33,8 @@ public class CartDAOImpl implements CartDAO {
         item.setCartId(rs.getLong("CartId"));
         item.setProductId(rs.getLong("ProductId"));
         item.setQuantity(rs.getInt("Quantity"));
-        item.setCreatedAt(rs.getTimestamp("CreatedAt") != null ? rs.getTimestamp("CreatedAt").toLocalDateTime() : null);
-        item.setUpdatedAt(rs.getTimestamp("UpdatedAt") != null ? rs.getTimestamp("UpdatedAt").toLocalDateTime() : null);
+        item.setPrice(rs.getBigDecimal("Price"));
+        item.setAddededAt(rs.getTimestamp("AddedAtDate") != null ? rs.getTimestamp("AddedAtDate").toLocalDateTime() : null);
         return item;
     };
 
@@ -41,20 +42,24 @@ public class CartDAOImpl implements CartDAO {
     public Long createCart(Long userId) {
         String sql = "INSERT INTO carts (UserId) VALUES (:userId)";
         MapSqlParameterSource params = new MapSqlParameterSource().addValue("userId", userId);
-        jdbcTemplate.update(sql, params);
-        return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", new MapSqlParameterSource(), Long.class);
+
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcTemplate.update(sql, params, keyHolder, new String[] { "CartId" });
+
+        return keyHolder.getKey().longValue();
     }
 
     @Override
     public void addItemToCart(CartItem item) {
-        String sql = "INSERT INTO cart_items (CartId, ProductId, Quantity, Price) " +
-                "VALUES (:cartId, :productId, :quantity, :price)";
+        String sql = "INSERT INTO cart_items (CartId, ProductId, UserId, Quantity, Price) " +
+                     "VALUES (:cartId, :productId, :userId, :quantity, :price)";
 
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("cartId", item.getCartId())
                 .addValue("productId", item.getProductId())
-                .addValue("price", item.getPrice())
-                .addValue("quantity", item.getQuantity());
+                .addValue("userId", item.getUserId())
+                .addValue("quantity", item.getQuantity())
+                .addValue("price", item.getPrice());
         jdbcTemplate.update(sql, params);
     }
 
