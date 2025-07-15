@@ -2,6 +2,7 @@ package com.orders.service;
 
 import java.util.List;
 
+import com.orders.carts.domain.CartItem;
 import com.orders.domain.Order;
 import com.orders.domain.SearchOrderCriteria;
 import com.orders.exceptions.InvalidOrderException;
@@ -17,4 +18,8 @@ public interface OrderService {
 	void updateMyOrder(SearchOrderCriteria criteria) throws OrderDatabaseOperationException, InvalidOrderException;
 
 	Order getOrderDetails(Long orderId, Long customerId) throws OrderDatabaseOperationException, InvalidOrderException;
+
+	Order createOrderFromCartItems(Long userId, List<CartItem> cartItems);
+
+
 }

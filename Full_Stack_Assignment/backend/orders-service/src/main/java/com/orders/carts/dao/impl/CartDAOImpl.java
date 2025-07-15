@@ -47,11 +47,13 @@ public class CartDAOImpl implements CartDAO {
 
     @Override
     public void addItemToCart(CartItem item) {
-        String sql = "INSERT INTO cart_items (CartId, ProductId, Quantity) " +
-                     "VALUES (:cartId, :productId, :quantity)";
+        String sql = "INSERT INTO cart_items (CartId, ProductId, Quantity, Price) " +
+                "VALUES (:cartId, :productId, :quantity, :price)";
+
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("cartId", item.getCartId())
                 .addValue("productId", item.getProductId())
+                .addValue("price", item.getPrice())
                 .addValue("quantity", item.getQuantity());
         jdbcTemplate.update(sql, params);
     }

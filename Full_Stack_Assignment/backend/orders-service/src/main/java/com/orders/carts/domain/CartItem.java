@@ -1,5 +1,6 @@
 package com.orders.carts.domain;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import lombok.AllArgsConstructor;
@@ -13,7 +14,9 @@ public class CartItem {
     private Long cartItemId;
     private Long cartId;
     private Long productId;
+    private String productName;
     private Integer quantity;
+    private BigDecimal price;   
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

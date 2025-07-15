@@ -1,20 +1,24 @@
 package com.orders.carts.service.impl;
 
-import com.orders.carts.dao.CartDAO;
-import com.orders.carts.domain.Cart;
-import com.orders.carts.domain.CartItem;
-import com.orders.carts.service.CartService;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import com.orders.carts.dao.CartDAO;
+import com.orders.carts.domain.Cart;
+import com.orders.carts.domain.CartItem;
+import com.orders.carts.service.CartService;
+import com.orders.service.OrderService;
 
 @Service
 public class CartServiceImpl implements CartService {
 
     @Autowired
     private CartDAO cartDAO;
+    
+    @Autowired
+    private OrderService orderService;
 
     @Override
     public Cart getOrCreateCart(Long userId) {
@@ -51,5 +55,17 @@ public class CartServiceImpl implements CartService {
     public void clearCart(Long userId) {
         Cart cart = getOrCreateCart(userId);
         cartDAO.clearCart(cart.getCartId());
+    }
+    
+    @Override
+    public void checkout(Long userId) {
+        List<CartItem> items = getCartItems(userId);
+        if (items.isEmpty()) {
+            throw new IllegalStateException("Cart is empty.");
+        }
+
+        orderService.createOrderFromCartItems(userId, items);
+
+        clearCart(userId);
     }
 }

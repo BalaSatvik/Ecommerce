@@ -1,16 +1,24 @@
 package com.orders.service.impl;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
+import com.orders.carts.dao.CartDAO;
+import com.orders.carts.domain.CartItem;
 import com.orders.dao.OrderDAO;
 import com.orders.domain.Order;
 import com.orders.domain.SearchOrderCriteria;
+import com.orders.enums.OrderStatus;
 import com.orders.exceptions.InvalidOrderException;
 import com.orders.exceptions.OrderDatabaseOperationException;
 import com.orders.exceptions.OrderNotFoundException;
+import com.orders.item.dao.OrderItemDAO;
+import com.orders.item.domain.OrderItem;
 import com.orders.item.service.OrderItemService;
 import com.orders.service.OrderService;
 
@@ -24,6 +32,51 @@ public class OrderServiceImpl implements OrderService {
 
 	private final OrderDAO orderDAO;
 	private final OrderItemService orderItemService;
+	private final OrderItemDAO orderItemDAO;
+	private final CartDAO cartDAO;
+	
+	@Override
+	public Order createOrderFromCartItems(Long userId,List<CartItem> cartItems) {
+	    List<OrderItem> orderItems = cartItems.stream()
+	            .map(cartItem -> {
+	                OrderItem orderItem = new OrderItem();
+	                orderItem.setProductId(cartItem.getProductId());
+	                orderItem.setQuantity(cartItem.getQuantity());
+	                orderItem.setPrice(cartItem.getPrice());
+	                orderItem.setCreatedAt(LocalDateTime.now());
+	                return orderItem;
+	            })
+	            .collect(Collectors.toList());
+	    BigDecimal totalAmount = orderItems.stream()
+	            .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+	            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+	    Order newOrder = new Order();
+	    newOrder.setUserId(userId);
+//	    newOrder.setAddress(fetchUserAddress(userId));
+	    newOrder.setTotalAmount(totalAmount);
+	    newOrder.setStatus(OrderStatus.PROCESSING);
+	    newOrder.setPlacedAtDate(LocalDateTime.now());
+
+	    try {
+	        Order savedOrder = orderDAO.createOrder(newOrder);
+
+	        for (OrderItem item : orderItems) {
+	            item.setOrderId(savedOrder.getOrderId());
+	        }
+	        orderItemDAO.storeOrderItems(orderItems);
+
+	        cartDAO.clearCart(userId);
+
+	        savedOrder.setOrderItems(orderItems);
+	        return savedOrder;
+
+	    } catch (Exception e) {
+	        log.error("Error while creating order from cart", e);
+	        throw new RuntimeException("Could not create order", e);
+	    }
+	}
+
 
 	@Override
 	public Order placeNewOrder(Order order) throws OrderDatabaseOperationException, InvalidOrderException {
